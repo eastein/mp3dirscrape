@@ -65,12 +65,12 @@ def new_filename(filename) :
 		except KeyError :
 			pass
 
-		fn = artist + ' '
+		fn = artist
 		if album :
 			if track :
-				fn += '[%s - %s]' % (album, track)
+				fn += ' [%s - %s]' % (album, track)
 			else :
-				fn += '[%s]' % album
+				fn += ' [%s]' % album
 		fn += ' - %s.mp3' % trackname
 
 		return fn
