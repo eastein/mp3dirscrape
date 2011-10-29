@@ -1,0 +1,100 @@
+#!/usr/bin/env python
+
+# licensed under do what the fuck you want to public license
+
+import os, os.path
+import sys
+import time
+import subprocess
+import re
+import shutil
+
+MATCH_TAG = re.compile('^([A-Z0-9]{4}) [^:]+: (.*)$')
+
+class CannotDetermineTagsException(Exception) :
+	pass
+
+def filter_that(s) :
+	r = ''
+	for c in s :
+		if c not in '\\/`' :
+			r += c
+	if r in ['.', '..', ''] :
+		raise CannotDetermineTagsException
+
+	return r
+
+def filtered_priority(d, keys) :
+	for k in keys :
+		try :
+			return filter_that(d[k])
+		except KeyError :
+			pass
+		except CannotDetermineTagsException :
+			pass
+
+	raise CannotDetermineTagsException
+
+def new_filename(filename) :
+	p = subprocess.Popen(['id3v2', '--list', filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	out, err = p.communicate()
+	status = p.wait()
+	if status != 0 :
+		raise CannotDetermineTagsException
+	lines = out.split('\n')
+
+	#print 'ran id3v2, its output was %s' % out
+
+	tags = {}
+	for l in lines :
+		m = MATCH_TAG.match(l)
+		if m :
+			tag, data = m.groups(1)
+			tags[tag] = data
+
+	print 'tags gathered: %s' % str(tags)
+
+	try :
+		trackname = filter_that(tags['TIT2'])
+		artist = filtered_priority(tags, ['TPE2', 'TPE1'])
+		album = None
+		track = None
+		try :
+			album = filter_that(tags['TALB'])
+			track = filter_that(tags['TRCK'])
+		except KeyError :
+			pass
+
+		fn = artist + ' '
+		if album :
+			if track :
+				fn += '[%s - %s]' % (album, track)
+			else :
+				fn += '[%s]' % album
+		fn += ' - %s.mp3' % trackname
+
+		return fn
+	except KeyError :
+		raise CannotDetermineTagsException
+
+if __name__ == '__main__' :
+	cache_dir = sys.argv[1]
+	out_dir = sys.argv[2]
+	files = lambda: os.listdir(cache_dir)
+
+	before = files()
+	while True :
+		time.sleep(1)
+		after = files()
+		if before != after :
+			new_files = set(after) - set(before)
+			for fn in new_files :
+				print 'new file, analyzing %s' % fn
+				fn_abs = os.path.join(cache_dir, fn)
+				try :
+					nfn_abs = os.path.join(out_dir, new_filename(fn_abs))
+					shutil.copyfile(fn_abs, nfn_abs)
+					print 'saved file to %s' % nfn_abs
+				except CannotDetermineTagsException :
+					print 'could not determine filename, skip'
+		before = after
