@@ -78,9 +78,22 @@ def new_filename(filename) :
 		raise CannotDetermineTagsException
 
 if __name__ == '__main__' :
-	cache_dir = sys.argv[1]
-	out_dir = sys.argv[2]
-	files = lambda: os.listdir(cache_dir)
+	try :
+		watch_dir = sys.argv[1]
+		out_dir = sys.argv[2]
+	except IndexError :
+		print 'usage: mp3dirscrape <watch_dir> <target_dir>'
+		sys.exit(1)
+
+	if not os.path.isdir(watch_dir) :
+		print 'watch_dir must exist and be a directory.'
+		sys.exit(1)
+	if not os.path.isdir(out_dir) :
+		print 'target_dir must exist and be a directory.'
+		sys.exit(1)
+
+
+	files = lambda: os.listdir(watch_dir)
 
 	before = files()
 	while True :
@@ -90,7 +103,7 @@ if __name__ == '__main__' :
 			new_files = set(after) - set(before)
 			for fn in new_files :
 				print 'new file, analyzing %s' % fn
-				fn_abs = os.path.join(cache_dir, fn)
+				fn_abs = os.path.join(watch_dir, fn)
 				try :
 					nfn_abs = os.path.join(out_dir, new_filename(fn_abs))
 					shutil.copyfile(fn_abs, nfn_abs)
