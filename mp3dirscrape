@@ -56,12 +56,12 @@ def new_filename(filename) :
 
 	try :
 		trackname = filter_that(tags['TIT2'])
-		artist = filtered_priority(tags, ['TPE2', 'TPE1'])
+		artist = filtered_priority(tags, ['TPE1', 'TPE2']).rstrip().lstrip()
 		album = None
 		track = None
 		try :
-			album = filter_that(tags['TALB'])
-			track = filter_that(tags['TRCK'])
+			album = filter_that(tags['TALB']).rstrip().lstrip()
+			track = filter_that(tags['TRCK']).rstrip().lstrip()
 		except KeyError :
 			pass
 
